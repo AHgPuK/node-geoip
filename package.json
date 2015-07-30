@@ -21,7 +21,7 @@
 		"iconv-lite": "~0.4.7",
 		"lazy": "~1.0.11",
 		"rimraf": "~2.0.2",
-		"unzip": "~0.0.4"
+		"unzip": "~0.1.4"
 	},
 	"config": {
 		"update": true

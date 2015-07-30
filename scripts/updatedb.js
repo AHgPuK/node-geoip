@@ -154,12 +154,13 @@ function extract(tmpFile, tmpFileName, cb) {
 		process.stdout.write('Extracting ' + tmpFileName + ' ...');
 
 		var unzipStream = unzip.Extract({
-			path: path.dirname(tmpFile)
+			path: path.dirname(tmpFile),
+			verbose: true
 		});
 
 		var pipeSteam = fs.createReadStream(tmpFile).pipe(unzipStream);
 
-		pipeSteam.on('end', function() {
+		pipeSteam.on('close', function() {
 			console.log(' DONE'.green);
 
 			if (tmpFileName.indexOf('GeoLiteCity') !== -1) {
@@ -176,6 +177,14 @@ function extract(tmpFile, tmpFileName, cb) {
 			}
 
 			cb();
+		});
+
+		pipeSteam.on('error', function(err) {
+			process.stdout.write(err.stack());
+		});
+
+		unzipStream.on('error', function(err) {
+			process.stdout.write(err.stack());
 		});
 	}
 }
