@@ -1,0 +1,4 @@
+syntax: glob
+yarn.lock
+node_modules/
+updatedb.cmd
