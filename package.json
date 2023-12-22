@@ -39,7 +39,7 @@
 		"async": "^3.2.4",
 		"colors": "^1.1.2",
 		"iconv-lite": "^0.6.3",
-		"ip-address": "^8.1.0",
+		"ip-address": "^9.0.5",
 		"lazy": "^1.0.11",
 		"rimraf": "^5.0.1",
 		"yauzl": "^2.9.2"
@@ -48,7 +48,7 @@
 		"update": true
 	},
 	"devDependencies": {
-		"eslint": "^8.41.0",
+		"eslint": "^8.56.0",
 		"nodeunit": "^0.11.2"
 	},
 	"license": "Apache-2.0"
