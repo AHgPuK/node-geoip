@@ -2,7 +2,7 @@
 
 'use strict';
 
-var user_agent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.36 Safari/537.36';
+var user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0';
 
 var fs = require('fs');
 var http = require('http');
@@ -10,6 +10,7 @@ var https = require('https');
 var path = require('path');
 var url = require('url');
 var zlib = require('zlib');
+const { Readable } = require('stream');
 
 fs.existsSync = fs.existsSync || path.existsSync;
 
@@ -166,20 +167,21 @@ function check(database, cb) {
 		console.log('Checking ', database.fileName);
         
 		function onResponse(response) {
-			var status = response.statusCode;
+			var status = response.status;
     
 			if (status !== 200) {
 				console.log('ERROR'.red + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
-				client.abort();
+				// client.abort();
 				process.exit();
 			}
     
 			var str = "";
-			response.on("data", function (chunk) {
-				str += chunk;
-			});
-            
-			response.on("end", function () {
+			// response.on("data", function (chunk) {
+			// 	str += chunk;
+			// });
+
+			response.text()
+			.then(function (str) {
 				if (str && str.length) {
 					if (str == database.checkValue) {
 						console.log(('Database "' + database.type + '" is up to date').green);
@@ -193,18 +195,55 @@ function check(database, cb) {
 				else {
 					console.log('ERROR'.red + ': Could not retrieve checksum for', database.type, 'Aborting'.red);
 					console.log('Run with "force" to update without checksum');
-					client.abort();
+					// client.abort();
 					process.exit();
 				}
 				cb(null, database);
-			});
+			})
+			.catch(err => {
+				console.log('ERROR'.red + ':', err.message);
+				// client.abort();
+				process.exit();
+			})
+
+			// response.on("end", function () {
+			// 	if (str && str.length) {
+			// 		if (str == database.checkValue) {
+			// 			console.log(('Database "' + database.type + '" is up to date').green);
+			// 			database.skip = true;
+			// 		}
+			// 		else {
+			// 			console.log(('Database ' + database.type + ' has new data').green);
+			// 			database.checkValue = str;
+			// 		}
+			// 	}
+			// 	else {
+			// 		console.log('ERROR'.red + ': Could not retrieve checksum for', database.type, 'Aborting'.red);
+			// 		console.log('Run with "force" to update without checksum');
+			// 		// client.abort();
+			// 		process.exit();
+			// 	}
+			// 	cb(null, database);
+			// });
 		}
         
-		var client = https.get(getHTTPOptions(checksumUrl), onResponse);
+		// var client = https.get(getHTTPOptions(checksumUrl), onResponse);
+
+		fetch(checksumUrl, {
+			headers: {
+				'User-Agent': user_agent,
+			}
+		})
+		.then(response => {
+			onResponse(response);
+		})
+		.catch(err => {
+			console.log('ERROR'.red + ': ' + err.message);
+		})
 	});
 }
 
-function fetch(database, cb) {
+function fetcher(database, cb) {
     
 	if (database.skip) {
 		return cb(null, null, null, database);
@@ -227,11 +266,11 @@ function fetch(database, cb) {
 	console.log('Fetching ', fileName);
 
 	function onResponse(response) {
-		var status = response.statusCode;
+		var status = response.status;
 
 		if (status !== 200) {
 			console.log('ERROR'.red + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
-			client.abort();
+			// client.abort();
 			process.exit();
 		}
 
@@ -239,9 +278,9 @@ function fetch(database, cb) {
 		var tmpFileStream = fs.createWriteStream(tmpFile);
 
 		if (gzip) {
-			tmpFilePipe = response.pipe(zlib.createGunzip()).pipe(tmpFileStream);
+			tmpFilePipe = Readable.fromWeb( response.body ).pipe(zlib.createGunzip()).pipe(tmpFileStream);
 		} else {
-			tmpFilePipe = response.pipe(tmpFileStream);
+			tmpFilePipe = Readable.fromWeb( response.body ).pipe(tmpFileStream);
 		}
 
 		tmpFilePipe.on('close', function() {
@@ -252,9 +291,21 @@ function fetch(database, cb) {
 
 	mkdir(tmpFile);
 
-	var client = https.get(getHTTPOptions(downloadUrl), onResponse);
+	// var client = https.get(getHTTPOptions(downloadUrl), onResponse);
 
 	process.stdout.write('Retrieving ' + fileName + ' ...');
+
+	fetch(downloadUrl, {
+		headers: {
+			'User-Agent': user_agent,
+		}
+	})
+	.then(response => {
+		onResponse(response);
+	})
+	.catch(err => {
+		console.log('ERROR'.red + ': ' + err.message);
+	})
 }
 
 function extract(tmpFile, tmpFileName, database, cb) {
@@ -632,7 +683,7 @@ mkdir(tmpPath);
 
 async.eachSeries(databases, function(database, nextDatabase) {
 
-	async.seq(check, fetch, extract, processData, updateChecksum)(database, nextDatabase);
+	async.seq(check, fetcher, extract, processData, updateChecksum)(database, nextDatabase);
 
 }, function(err) {
 	if (err) {
