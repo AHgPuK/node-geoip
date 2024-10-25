@@ -417,8 +417,8 @@ function processCountryData(src, dest, cb) {
 				bsz = 10;
 
 				rngip = new Address4(fields[0]);
-				sip = parseInt(rngip.startAddress().bigInteger(),10);
-				eip = parseInt(rngip.endAddress().bigInteger(),10);
+				sip = parseInt(rngip.startAddress().bigInt(),10);
+				eip = parseInt(rngip.endAddress().bigInt(),10);
 	
 				b = Buffer.alloc(bsz);
 				b.fill(0);
@@ -520,8 +520,8 @@ function processCityData(src, dest, cb) {
 			bsz = 24;
 
 			rngip = new Address4(fields[0]);
-			sip = parseInt(rngip.startAddress().bigInteger(),10);
-			eip = parseInt(rngip.endAddress().bigInteger(),10);
+			sip = parseInt(rngip.startAddress().bigInt(),10);
+			eip = parseInt(rngip.endAddress().bigInt(),10);
 			locId = parseInt(fields[1], 10);
 			locId = cityLookup[locId];
 			b = Buffer.alloc(bsz);
